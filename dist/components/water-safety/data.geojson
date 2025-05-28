@@ -1,0 +1,19 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {"name": "Sample Polygon"},
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [4.895, 52.370],
+                    [4.900, 52.370],
+                    [4.900, 52.375],
+                    [4.895, 52.375],
+                    [4.895, 52.370]
+                ]]
+            }
+        }
+    ]
+}
