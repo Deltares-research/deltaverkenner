@@ -1,23 +1,15 @@
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <span>Waterveiligheid faalkans</span>
+    <span>Overstromingsrisico</span>
     <i class="fas fa-info-circle" style="cursor:pointer" onclick="showModal('./components/water-safety/modal.html')"></i>
   </div>
   <div class="card-body">
     <div class="row">
       <div class="col-6">
-        <label for="dijkring1" class="form-label">Dijkring</label>
-        <select class="form-select mb-3" id="dijkring1">
-          <option>Kies een dijkring</option>
-        </select>
-        <div class="placeholder-box text-center" id="map"></div>
+        <div id="map" style="height:800px"></div>
       </div>
       <div class="col-6">
-        <label for="dijkring2" class="form-label">Dijkring</label>
-        <select class="form-select mb-3" id="dijkring2">
-          <option>Kies een dijkring</option>
-        </select>
-        <div class="placeholder-box text-center">mapbox placeholder</div>
+        <div id="map-click">Klik op een buurt in de kaart</div>
       </div>
     </div>
   </div>

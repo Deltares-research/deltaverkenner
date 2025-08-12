@@ -1,82 +1,58 @@
 import { loadComponent } from '../../shared/componentLoader.js';
 
 let map
-function updateGeoJSON(map, sourceId, geojsonData) {
-  // Remove existing layers and source if they exist
-  if (map.getLayer(`${sourceId}-fill`)) {
-    map.removeLayer(`${sourceId}-fill`);
-  }
-  if (map.getLayer(`${sourceId}-outline`)) {
-    map.removeLayer(`${sourceId}-outline`);
-  }
-  if (map.getSource(sourceId)) {
-    map.removeSource(sourceId);
-  }
-
-  // Add new source
-  map.addSource(sourceId, {
-    type: 'geojson',
-    data: geojsonData // can be a URL or an object
-  });
-
-  // Add fill layer
-  map.addLayer({
-    id: `${sourceId}-fill`,
-    type: 'fill',
-    source: sourceId,
-    paint: {
-      'fill-color': "#" + ((1 << 24) * Math.random() | 0).toString(16).padStart(6, "0"), //'#fff',
-      'fill-opacity': 0.5
-    }
-  });
-
-  
-  // Add outline layer
-  map.addLayer({
-    id: `${sourceId}-outline`,
-    type: 'line',
-    source: sourceId,
-    paint: {
-      'line-color': '#fff',
-      'line-width': 2
-    }
-  });
-  
-}
 
 loadComponent({
   htmlPath: './components/water-safety/body.html',
 
   onLoaded: (wrapper) => {
-    const select1 = document.getElementById('dijkring1');
-    const select2 = document.getElementById('dijkring2');
-    for (let i = 1; i <= 3; i++) {
-      const opt = new Option(`Dijkring ${i}`, `Dijkring ${i}`);
-      select1.appendChild(opt.cloneNode(true));
-      select2.appendChild(opt.cloneNode(true));
-    }
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoibXVsZGVybmllbHMiLCJhIjoiY21hd2lsbzd3MGRsaTJrczUzZDZqcHk2YSJ9.u_ZMSDYkqT91VxKqYtbdQQ';
-    map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/mapbox/satellite-v9',
-      center: [4.897, 52.372],
-      zoom: 13
+    
+	mapboxgl.accessToken = 'pk.eyJ1IjoibXVsZGVybmllbHMiLCJhIjoiY21hd2lsbzd3MGRsaTJrczUzZDZqcHk2YSJ9.u_ZMSDYkqT91VxKqYtbdQQ';
+    const map = new mapboxgl.Map({
+        container: 'map', // container ID
+        center: [5,52], // starting position [lng, lat]. Note that lat must be set between -90 and 90
+        zoom: 7 // starting zoom
     });
+
+    map.on('load', () => {
+      map.addSource('neighbourhoods_nl', {
+        type: 'vector',
+        tiles: [
+        'https://deltaresdata.openearth.eu/geoserver/gwc/service/tms/1.0.0/deltaverkenner:neighbourhoods_nl@EPSG:900913@pbf/{z}/{x}/{y}.pbf'
+        ],
+        minzoom: 0,
+        maxzoom: 14,
+        scheme: 'tms' // tell Mapbox that this is bottom-left origin
+      });
+
+      map.addLayer({
+        id: 'neighbourhoods_nl-fill',
+        type: 'fill',
+        source: 'neighbourhoods_nl',
+        'source-layer': 'neighbourhoods_nl', // ← update this after checking
+        paint: {
+          'fill-color': [
+            'interpolate',
+            ['exponential', 1],//['linear'],
+            ['get', 'AANT_INW'], // numeric column from your shapefile
+            0, '#ffff00',        // yellow at 0
+            6000, '#800080'      // purple at 6000
+          ],
+          'fill-opacity': 0.6,
+          //'fill-outline-color': '#333'
+        }
+      });
+
+      map.on('click', 'neighbourhoods_nl-fill', function (e) {
+        if (e.features.length > 0) {
+          const props = e.features[0].properties;
+          document.querySelector('#map-click').innerHTML = `Het aantal inwoners van buurt ${props.BU_NAAM} (gemeente ${props.GM_NAAM}) is ${props.AANT_INW}.`
+        }
+      })
+
+    })
 
   },
 
-  onSettings: (settings, wrapper) => {
-    fetch('./components/water-safety/data.geojson')
-      .then(res => res.json())
-      .then(data => {
-        if (map.loaded()) {
-          updateGeoJSON(map, 'polygon', data);
-        } else {
-          map.once('load', () => {
-            updateGeoJSON(map, 'polygon', data);
-          });
-        }
-      });
-  }
 });
