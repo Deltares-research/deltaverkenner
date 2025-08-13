@@ -1,11 +1,17 @@
 import { loadComponent } from '../../shared/componentLoader.js';
+import {Sankey} from "https://muldernielsdeltares.github.io/SankeyRiver/sankey.min.js"
 
-let chart
 
 loadComponent({
   htmlPath: './components/fresh-water-shortage/body.html',
 
   onLoaded: (wrapper) => {
+
+    function mean(arr) {
+      if (arr.length === 0) return 0; // avoid division by 0
+      const sum = arr.reduce((acc, val) => acc + val, 0);
+      return sum / arr.length;
+    }
 
     async function init() {
       const res = await fetch('deltaverkenner/data/scenario-1.json');
@@ -36,7 +42,29 @@ loadComponent({
         options: { responsive: true }
       });
 
+      //sankey
+      const sankeyCfg = {
+          nodeConfig: {
+          Beschikbaar: {style:{fill:"lightblue"}},
+          Vraag: {style:{fill:"lightblue"}},
+          Tekort: {style:{fill:"red"}},
+          Beregening: {style:{fill:"green"}},
+          Peilbeheer: {style:{fill:"black"}},
+          Doorspoeling: {style:{fill:"blue"}},
+        },
+        flowBaseConfig: {
+          tooltip: (flow) => `${flow.from} &rarr; ${flow.to}: ${Math.round(flow.value*100)/100} m³/s`
+        },
+        nodeBaseConfig: {
+          label: {text: (node) => `${node.id} (${Math.round(node.size*100)/100} m³/s)`},
+          tooltip: null,
+        },
+        margin: [10,10,10,10],
+      }
+
+
       function updateChart() {
+        //data processing
         const startIdx = parseInt(startSel.value);
         const endIdx = parseInt(endSel.value);
         const region = regionSel.value;
@@ -60,6 +88,7 @@ loadComponent({
           return Math.max(totalVraag - totalLevering, 0);
         }).slice(startIdx, endIdx + 1);
 
+        //line
         chart.data.labels = labels;
         chart.data.datasets = [
           { label: 'Doorspoeling Vraag', data: doorspoeling_vraag, borderColor: 'blue', fill: false },
@@ -68,6 +97,19 @@ loadComponent({
           { label: 'Tekort', data: tekort, borderColor: 'red', fill: false }
         ];
         chart.update();
+
+        //sankey
+        const beschikbaar = doorspoeling_vraag.map((_, i) => doorspoeling_vraag[i] + beregening_vraag[i] + peilbeheer_vraag[i] - tekort[i]);
+
+        const flows = [
+          { from: "Beschikbaar", to: "Vraag", value: mean(beschikbaar), style:{fill:"lightblue"}},
+          { from: "Tekort", to: "Vraag", value: mean(tekort), style:{fill:"red"}},
+          { from: "Vraag", to: "Beregening", value: mean(beregening_vraag), style:{fill:"blue"}},
+          { from: "Vraag", to: "Peilbeheer", value: mean(peilbeheer_vraag), style:{fill:"blue"}},
+          { from: "Vraag", to: "Doorspoeling", value: mean(doorspoeling_vraag), style:{fill:"blue"}},
+        ]
+
+        new Sankey('sankey-area', {flows, ...sankeyCfg})
       }
 
       startSel.addEventListener('change', updateChart);
