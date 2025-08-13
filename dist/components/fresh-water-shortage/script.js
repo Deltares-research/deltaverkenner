@@ -14,7 +14,7 @@ loadComponent({
     }
 
     async function init() {
-      const res = await fetch('deltaverkenner/data/scenario-1.json');
+      const res = await fetch('https://deltares-research.github.io/deltaverkenner/data/scenario-1.json');
       const data = await res.json();
 
       const time = data.time;
