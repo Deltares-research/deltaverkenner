@@ -8,7 +8,7 @@ loadComponent({
   onLoaded: (wrapper) => {
 
     async function init() {
-      const res = await fetch('/data/scenario-1.json');
+      const res = await fetch('data/scenario-1.json');
       const data = await res.json();
 
       const time = data.time;
