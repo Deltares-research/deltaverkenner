@@ -14,37 +14,58 @@ loadComponent({
     }
 
     async function init() {
-      const res = await fetch('https://deltares-research.github.io/deltaverkenner/data/scenario-1.json');
+      const res = await fetch('./data/scenario-1.json');
       const data = await res.json();
 
       const time = data.time;
       const regions = Object.keys(data.region);
 
       // Populate time selects
-      const startSel = document.getElementById('period_start');
-      const endSel = document.getElementById('period_end');
+      //const startSel = document.getElementById('period_start');
+      //const endSel = document.getElementById('period_end');
+      const periodSel = document.getElementById('period');
       time.forEach((t, i) => {
-        startSel.add(new Option(t, i));
-        endSel.add(new Option(t, i));
+        //startSel.add(new Option(t, i));
+        //endSel.add(new Option(t, i));
+        if (t.indexOf('-01-01')>0) {
+          periodSel.add(new Option(t.substring(0,4), i));
+        }
       });
-      startSel.value = time.length - 36*2;
-      endSel.value = time.length - 1;
+      //startSel.value = time.length - 36*2;
+      //endSel.value = time.length - 1;
+      periodSel.value = time.length-36
 
       // Populate region select
       const regionSel = document.getElementById('region_select');
       regions.forEach(r => regionSel.add(new Option(r, r)));
       regionSel.value = regions[0];
 
+      const datasetsCfg = {
+        pointRadius: 0,         // hide dots/points
+        tension: 0.1            // smooth the line (0 = straight, 1 = very curvy)
+      }
       const ctx = document.getElementById('myChart').getContext('2d');
       const chart = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [] },
-        options: { responsive: true }
-      });
-
+        data: { 
+          labels: [], 
+          datasets: []
+        },
+        options: { 
+          responsive: true,
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'm³/s'
+              }
+            }
+          }
+        }
+      })
       //sankey
       const sankeyCfg = {
-          nodeConfig: {
+        nodeConfig: {
           Beschikbaar: {style:{fill:"lightblue"}},
           Vraag: {style:{fill:"lightblue"}},
           Tekort: {style:{fill:"red"}},
@@ -65,8 +86,10 @@ loadComponent({
 
       function updateChart() {
         //data processing
-        const startIdx = parseInt(startSel.value);
-        const endIdx = parseInt(endSel.value);
+        //const startIdx = parseInt(startSel.value);
+        //const endIdx = parseInt(endSel.value);
+        const startIdx = parseInt(periodSel.value);
+        const endIdx = startIdx+36-1;
         const region = regionSel.value;
 
         const labels = time.slice(startIdx, endIdx + 1);
@@ -88,32 +111,42 @@ loadComponent({
           return Math.max(totalVraag - totalLevering, 0);
         }).slice(startIdx, endIdx + 1);
 
+        const dryestPeriod = tekort.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0);
+        const dryestMonthStart = Math.floor((dryestPeriod) / 3) * 3;
+        
+        console.log(dryestPeriod, dryestMonthStart)
+
         //line
         chart.data.labels = labels;
         chart.data.datasets = [
-          { label: 'Doorspoeling Vraag', data: doorspoeling_vraag, borderColor: 'blue', fill: false },
-          { label: 'Beregening Vraag', data: beregening_vraag, borderColor: 'green', fill: false },
-          { label: 'Peilbeheer Vraag', data: peilbeheer_vraag, borderColor: 'black', fill: false },
-          { label: 'Tekort', data: tekort, borderColor: 'red', fill: false }
+          { label: 'Doorspoeling Vraag', data: doorspoeling_vraag, borderColor: 'blue', ...datasetsCfg },
+          { label: 'Beregening Vraag', data: beregening_vraag, borderColor: 'green', ...datasetsCfg },
+          { label: 'Peilbeheer Vraag', data: peilbeheer_vraag, borderColor: 'black', ...datasetsCfg },
+          { label: 'Tekort', data: tekort, borderColor: 'red', ...datasetsCfg }
         ];
         chart.update();
+
+        document.getElementById('sankeyDesc').innerHTML = 
+        `In ${time[periodSel.value].substring(0,4)} was ${dryestMonthStart/3+1} de maand met het grootste tekort. Onderstaande Sankey laat de balans zien voor die maand.`
+
 
         //sankey
         const beschikbaar = doorspoeling_vraag.map((_, i) => doorspoeling_vraag[i] + beregening_vraag[i] + peilbeheer_vraag[i] - tekort[i]);
 
         const flows = [
-          { from: "Beschikbaar", to: "Vraag", value: mean(beschikbaar), style:{fill:"lightblue"}},
-          { from: "Tekort", to: "Vraag", value: mean(tekort), style:{fill:"red"}},
-          { from: "Vraag", to: "Beregening", value: mean(beregening_vraag), style:{fill:"blue"}},
-          { from: "Vraag", to: "Peilbeheer", value: mean(peilbeheer_vraag), style:{fill:"blue"}},
-          { from: "Vraag", to: "Doorspoeling", value: mean(doorspoeling_vraag), style:{fill:"blue"}},
+          { from: "Beschikbaar", to: "Vraag", value: mean(beschikbaar.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"lightblue"}},
+          { from: "Tekort", to: "Vraag", value: mean(tekort.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"red"}},
+          { from: "Vraag", to: "Beregening", value: mean(beregening_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
+          { from: "Vraag", to: "Peilbeheer", value: mean(peilbeheer_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
+          { from: "Vraag", to: "Doorspoeling", value: mean(doorspoeling_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
         ]
 
         new Sankey('sankey-area', {flows, ...sankeyCfg})
       }
 
-      startSel.addEventListener('change', updateChart);
-      endSel.addEventListener('change', updateChart);
+      //startSel.addEventListener('change', updateChart);
+      //endSel.addEventListener('change', updateChart);
+      periodSel.addEventListener('change', updateChart);
       regionSel.addEventListener('change', updateChart);
 
       updateChart();

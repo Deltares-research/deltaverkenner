@@ -4,12 +4,47 @@
     <i class="fas fa-info-circle" style="cursor:pointer" onclick="showModal('./components/water-safety/modal.html')"></i>
   </div>
   <div class="card-body">
+
+    <div class="row pb-3">
+      <div class="col-md-3">
+        <div class="input-group">
+          <span class="input-group-text">Klimaatscenario</span>
+          <select class="form-select" id="tijdlijn"></select>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="input-group">
+          <span class="input-group-text">Maatregel</span>
+          <select class="form-select" id="variant"></select>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="input-group">
+          <span class="input-group-text">Jaar</span>
+          <select class="form-select" id="zichtjaar"></select>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="input-group">
+          <span class="input-group-text">Waterdiepte</span>
+          <select class="form-select" id="diepte"></select>
+        </div>
+      </div>
+    </div>
+
+
     <div class="row">
       <div class="col-6">
         <div id="map" style="height:800px"></div>
       </div>
       <div class="col-6">
+
         <div id="map-click">Klik op een buurt in de kaart</div>
+        <canvas id="flooded-chart"></canvas>
+
       </div>
     </div>
   </div>

@@ -5,6 +5,7 @@
   </div>
   <div class="card-body">
     <div class="row">
+      <!--
       <div class="col-md-4">
         <div class="input-group">
           <span class="input-group-text">Start</span>
@@ -17,6 +18,13 @@
           <select class="form-select" id="period_end"></select>
         </div>
       </div>
+      -->
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text">Jaar</span>
+          <select class="form-select" id="period"></select>
+        </div>
+      </div>
       <div class="col-md-4">
         <div class="input-group">
           <span class="input-group-text">Regio</span>
@@ -25,14 +33,13 @@
       </div>
 
     </div>
-  
-    <h5>Waterbalans over tijd</h5>
-    <canvas id="myChart"></canvas>
-  
-    <h5>Sankey</h5>
-    <p>Sankey geeft fluxen weer voor de geslecteerde regio, gemiddeld over de gesecteerde periode</p>
+    
+    <h5>Waterbalans</h5>
+    <p id="sankeyDesc">Sankey geeft fluxen weer voor de geslecteerde regio, gemiddeld over de gesecteerde periode</p>
     <div id="sankey-area"></div>
 
+    <h5>Waterbalans over tijd</h5>
+    <canvas id="myChart"></canvas>
 
   </div>
 </div>
