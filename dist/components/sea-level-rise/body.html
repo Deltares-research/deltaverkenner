@@ -1,16 +1,25 @@
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <span>Zeespiegelstijging</span>
+    <img style="height: 4em;" src="./assets/sealevelrise.svg">
+    <h3>Zeespiegelstijging</h3>
     <i class="fas fa-info-circle" style="cursor:pointer" onclick="showModal('./components/sea-level-rise/modal.html')"></i>
   </div>
   <div class="card-body">
     <div class="row">
       <div class="col-6">
-        <div class="placeholder-box text-center">Sankey's</div>
+        <div class="text-center" id="zss-left">
+          <h3><span id="zss-left-value"></span> meter zeespiegelsteiging</h3>
+        </div>
       </div>
       <div class="col-6">
-        <div class="placeholder-box text-center">Sankey's</div>
+        <div class="text-center" id="zss-right">
+          <h3><span id="zss-right-value"></span> meter zeespiegelsteiging</h3>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!--
+sea level rise by Mutualism from <a href="https://thenounproject.com/browse/icons/term/sea-level-rise/" target="_blank" title="sea level rise Icons">Noun Project</a> (CC BY 3.0)
+-->

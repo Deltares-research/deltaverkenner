@@ -1,0 +1,45 @@
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Zoetwater tekort</span>
+    <i class="fas fa-info-circle" style="cursor:pointer" onclick="showModal('./components/fresh-water-shortage/modal.html')"></i>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <!--
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text">Start</span>
+          <select class="form-select" id="period_start"></select>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text">Einde</span>
+          <select class="form-select" id="period_end"></select>
+        </div>
+      </div>
+      -->
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text">Jaar</span>
+          <select class="form-select" id="period"></select>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text">Regio</span>
+          <select class="form-select" id="region_select"></select>
+        </div>
+      </div>
+
+    </div>
+    
+    <h5>Waterbalans</h5>
+    <p id="sankeyDesc">Sankey geeft fluxen weer voor de geslecteerde regio, gemiddeld over de gesecteerde periode</p>
+    <div id="sankey-area"></div>
+
+    <h5>Waterbalans over tijd</h5>
+    <canvas id="myChart"></canvas>
+
+  </div>
+</div>

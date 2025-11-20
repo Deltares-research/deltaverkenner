@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Display a map on a webpage</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+	// TO MAKE THE MAP APPEAR YOU MUST
+	// ADD YOUR ACCESS TOKEN FROM
+	// https://account.mapbox.com
+	mapboxgl.accessToken = 'pk.eyJ1IjoibXVsZGVybmllbHMiLCJhIjoiY21hd2lsbzd3MGRsaTJrczUzZDZqcHk2YSJ9.u_ZMSDYkqT91VxKqYtbdQQ';
+    const map = new mapboxgl.Map({
+        container: 'map', // container ID
+        center: [5,52], // starting position [lng, lat]. Note that lat must be set between -90 and 90
+        zoom: 7 // starting zoom
+    });
+
+    function tmsY(z, y) {
+  return (Math.pow(2, z) - 1) - y;
+}
+
+    map.on('load', () => {
+  map.addSource('neighbourhoods_nl', {
+    type: 'vector',
+    tiles: [
+    'https://deltaresdata.openearth.eu/geoserver/gwc/service/tms/1.0.0/deltaverkenner:neighbourhoods_nl@EPSG:900913@pbf/{z}/{x}/{y}.pbf'
+    ],
+    minzoom: 0,
+    maxzoom: 14,
+    scheme: 'tms' // tell Mapbox that this is bottom-left origin
+
+  });
+
+  map.addLayer({
+    id: 'neighbourhoods_nl-fill',
+    type: 'fill',
+    source: 'neighbourhoods_nl',
+    'source-layer': 'neighbourhoods_nl', // ← update this after checking
+  paint: {
+    'fill-color': [
+      'interpolate',
+      ['linear'],
+      ['get', 'AANT_INW'], // numeric column from your shapefile
+      0, '#ffff00',        // yellow at 0
+      6000, '#800080'      // purple at 6000
+    ],
+    'fill-opacity': 0.6,
+    'fill-outline-color': '#333'
+  }
+  });
+map.on('click', 'neighbourhoods_nl-fill', function (e) {
+  if (e.features.length > 0) {
+    const props = e.features[0].properties;
+    alert('aantal inwoners: '+props.AANT_INW)
+  }
+})
+
+})
+
+
+
+
+
+</script>
+
+</body>
+</html>

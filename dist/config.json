@@ -1,56 +1,52 @@
 {
-  "scenarios": [
+  "menu": [
     {
-      "value": "ref",
-      "label": "Referentie"
+      "id": "klimaat",
+      "label": "Klimaatscenario",
+      "type": "select",
+      "default": "laag",
+      "options": ["referentie", "laag", "gematigd", "extreem", "zeer extreem"]
     },
     {
-      "value": "hd2050",
-      "label": "Hd2050"
+      "id": "zichtjaar",
+      "label": "Zichtjaar",
+      "type": "select",
+      "default": "2023",
+      "options": ["2023", "2050", "2100", "2150", "2200"]
     },
     {
-      "value": "hd2100",
-      "label": "Hd2100"
-    }
-  ],
-  "measures": [
-    {
-      "value": "0",
-      "label": "0. voortzetten huidig beleid"
+      "id": "afvoerverdeling",
+      "label": "Afvoerverdeling",
+      "type": "select",
+      "default": "2018",
+      "options": ["2018", "1980", "2050"]
     },
     {
-      "value": "1",
-      "label": "1. Meer water naar de IJssel (ZW)"
+      "id": "afvoerbeperking",
+      "label": "Afvoerbeperking",
+      "type": "select",
+      "default": false,
+      "options": [
+        { "label": "ja", "value": true },
+        { "label": "nee", "value": false }
+      ]
     },
     {
-      "value": "2",
-      "label": "2. Buffer IJM/MM (ZW)"
-    },
-    {
-      "value": "3",
-      "label": "3. Surplus HIJ/Lek vergroten (ZW)"
-    },
-    {
-      "value": "4",
-      "label": "4. Meer water naar de Waal (WV)"
-    },
-    {
-      "value": "5",
-      "label": "5. RvdR -30 cm (WV)"
-    },
-    {
-      "value": "6",
-      "label": "6. Afsluiten NWW (ZW + WV)"
+      "id": "kwa",
+      "label": "KWA",
+      "type": "select",
+      "default": false,
+      "options": [
+        { "label": "ja", "value": true },
+        { "label": "nee", "value": false }
+      ]
     }
   ],
   "defaults": {
     "left": {
-      "scenario": "ref",
-      "measures": ["0"]
     },
     "right": {
-      "scenario": "hd2050",
-      "measures": ["1"]
+      "zichtjaar": 2200
     }
   },
   "settings": {

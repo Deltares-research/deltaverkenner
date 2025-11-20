@@ -1,81 +1,86 @@
 import { settingsStore } from '../../shared/settingsStore.js';
 
-function createSelectsOld(container, side, config) {
-  container.innerHTML = `
-    <label>Scenario</label>
-    <select class="form-select mb-2" id="${side}-scenario">
-      ${config.scenarios.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
-    </select>
-    <label>Measures</label>
-    <select class="form-select" id="${side}-measures" multiple>
-      ${config.measures.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
-    </select>
-  `;
-
-  const updateStore = () => {
-    const scenario = document.getElementById(`${side}-scenario`).value;
-    const measures = Array.from(document.getElementById(`${side}-measures`).selectedOptions).map(o => o.value);
-    settingsStore.setState(side, { scenario, measures });
-  };
-
-  container.querySelectorAll('select').forEach(el => el.addEventListener('change', updateStore));
-
-  document.getElementById(`${side}-scenario`).value = config.defaults[side].scenario;
-  const select = document.getElementById(`${side}-measures`);
-  Array.from(select.options).forEach(opt => {
-    opt.selected = config.defaults[side].measures.includes(opt.value);
-  });
-
-  updateStore();
-}
+let runs = []
 
 function createSelects(container, side, config) {
-  container.innerHTML = `
-    <label>Scenario</label>
-    <select class="form-select mb-2" id="${side}-scenario">
-      ${config.scenarios.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
-    </select>
-    <label class="form-label">Maatregelen</label>
-    <div class="card rounded-2">
-      <div class="card-body" id="${side}-measures">
-        ${config.measures.map((opt, i) => `
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" value="${opt.value}" id="${side}-opt${i}">
-            <label class="form-check-label" for="${side}-opt${i}">${opt.label}</label>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
+  container.innerHTML = ""; // clean container
+  const menu = config.menu
+  const defaults = config.defaults?.[side] || {};
 
+  // Build each select from config.menu
+  menu.forEach(item => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("input-group", "mb-3");
+
+      const span = document.createElement("span");
+      span.classList.add("input-group-text");
+      span.textContent = item.label;
+      wrapper.appendChild(span);
+
+      const select = document.createElement("select");
+      select.classList.add("form-select");
+      select.id = `${side}-${item.id}`;
+
+      item.options.forEach(opt => {
+          const option = document.createElement("option");
+
+          if (typeof opt === "string") {
+              option.value = opt;
+              option.textContent = opt;
+          } else {
+              option.value = opt.value;
+              option.textContent = opt.label;
+          }
+
+          select.appendChild(option);
+      });
+
+    const defVal = defaults[item.id] ?? item.default;
+    if (defVal !== undefined) {
+        select.value = String(defVal);
+    }
+
+    wrapper.appendChild(select);
+    container.appendChild(wrapper);
+});
+
+  // Store update function
   const updateStore = () => {
-    const scenario = document.getElementById(`${side}-scenario`).value;
-    const checkboxes = container.querySelectorAll('.form-check-input');
-    const measures = Array.from(checkboxes)
-      .filter(cb => cb.checked)
-      .map(cb => cb.value);
-    settingsStore.setState(side, { scenario, measures });
+    const newState = {};
+
+    menu.forEach(item => {
+      const el = document.getElementById(`${side}-${item.id}`);
+      newState[item.id] = el.value;
+    });
+
+    const match = runs.find(row =>
+      row.klimaat === newState.klimaat &&
+      Number(row.zichtjaar) === Number(newState.zichtjaar) &&
+      Number(row.afvoerverdeling) === Number(newState.afvoerverdeling) &&
+      String(row.afvoerbeperking) === String(newState.afvoerbeperking) &&
+      String(row.kwa) === String(newState.kwa)
+    );
+    newState['runID'] = match ? match.runID : null
+
+    settingsStore.setState(side, newState);
   };
 
-  const checkboxes = container.querySelectorAll('.form-check-input');
-  checkboxes.forEach(cb => {
-    cb.checked = config.defaults[side].measures.includes(cb.value);
-    cb.addEventListener('change', updateStore);
+  // Attach change listeners
+  menu.forEach(item => {
+    const el = document.getElementById(`${side}-${item.id}`);
+    el.addEventListener("change", updateStore);
   });
 
-  
-  const el = document.getElementById(`${side}-scenario`)
-  el.value = config.defaults[side].scenario;
-  el.addEventListener('change', updateStore);
-
+  // Initial store update
   updateStore();
 }
 
 
+// Load config + HTML + build menus
 fetch('./config.json')
   .then(res => res.json())
   .then(config => {
-    settingsStore.setSettings(config.settings)
+    settingsStore.setSettings(config.settings);
     const container = document.getElementById('settings-container');
     fetch('./components/settings/settings.html')
       .then(r => r.text())
@@ -84,6 +89,12 @@ fetch('./config.json')
         createSelects(document.getElementById('left-settings'), 'left', config);
         createSelects(document.getElementById('right-settings'), 'right', config);
       });
+  });
+
+fetch('./data/runs.json')
+  .then(r => r.json())
+  .then(data => {
+    runs = data
   });
 
 window.showModal = (content) => {

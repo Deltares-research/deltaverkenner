@@ -1,7 +1,7 @@
 export const settingsStore = {
   state: {
-    left: { scenario: null, measures: [] },
-    right: { scenario: null, measures: [] }
+    left: {},
+    right: {}
   },
   settings: {},
   listeners: [],
@@ -16,12 +16,12 @@ export const settingsStore = {
   setState(side, data, update=true) {
     this.state[side] = data;
     this.update()
+    console.log(this.state)
   },
 
   setSettings(data) {
     this.settings = data
   },
-
 
   subscribe(cb) {
     this.listeners.push(cb);

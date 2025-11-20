@@ -1,158 +1,229 @@
 import { loadComponent } from '../../shared/componentLoader.js';
-import {Sankey} from "https://muldernielsdeltares.github.io/SankeyRiver/sankey.min.js"
+
+let regions
+let settings
+
+const chartConfig = {
+  type: 'line',
+  data: { 
+    labels: [], 
+    datasets: []
+  },
+  options: { 
+    responsive: true,
+    scales: {
+      y: {
+        title: {
+          display: true,
+          text: 'm³/s'
+        }
+      }
+    }
+  }
+}
+
+const mapConfig = {
+  center: [5.3, 52.4], // approx. geographic center of the Netherlands
+  zoom: 6,             // starting zoom (inside allowed range)
+  style: 'mapbox://styles/mapbox/light-v11',
+  minZoom: 6,
+  maxZoom: 14
+}
+
+let lineChartLeft
+let lineChartRight
+
+async function fetchLineChartData(runID, selectedRegion, selectedT) {
+  try {
+    const response = await fetch(`./data/graphs/fresh-water-shortage-line/${runID}-${selectedRegion}-T${selectedT}.json`);
+    return response.ok ? await response.json() : {};
+  } catch (err) {
+    console.error("Error fetching JSON:", err);
+    return {};
+  }
+}
+
+function syncLineYAxis(charts) {
+  // Gather all y-values safely
+  const allData = charts.flatMap(c => (c?.data?.datasets || []).flatMap(ds => ds.data || []))
+                        .filter(v => v != null);
+
+  if (!allData.length) return;
+
+  const maxY = Math.ceil(Math.max(...allData));
+
+  charts.forEach(c => {
+    if (!c?.data?.datasets) return;
+    c.options.scales.y.min = 0;
+    c.options.scales.y.max = maxY;
+    c.update();
+  });
+}
+
+async function updateLineCharts(leftRunID, rightRunID, selectedRegion, selectedT) {
+  // Fetch both chart data in parallel
+  const [leftData, rightData] = await Promise.all([
+    fetchLineChartData(leftRunID, selectedRegion, selectedT),
+    fetchLineChartData(rightRunID, selectedRegion, selectedT)
+  ]);
+
+  // Clone data to avoid shared references
+  lineChartLeft.data = leftData
+  lineChartRight.data = rightData;
+
+  // Sync y-axis
+  syncLineYAxis([lineChartLeft, lineChartRight]);
+}
+
+
+//map stuff
+let shortageData = null;     // stored geojson
+let activeAttr = "2_10";     // default attribute
+const sourceId = "shortage"; // shared source name
+const fillLayer = "shortage-fill";
+const outlineLayer = "shortage-outline";
+let mapLeft, mapRight
+
+async function loadShortageData() {
+  const resp = await fetch("./data/graphs/shortage.geojson");
+  shortageData = await resp.json();
+}
+
+function initShortageLayer(map) {
+  // Add source once per map
+  if (!map.getSource(sourceId)) {
+    map.addSource(sourceId, {
+      type: "geojson",
+      data: shortageData
+    });
+  }
+
+  // Fill layer
+  if (!map.getLayer(fillLayer)) {
+    map.addLayer({
+      id: fillLayer,
+      type: "fill",
+      source: sourceId,
+      paint: {
+        "fill-color": buildColorExpression(activeAttr),
+        "fill-opacity": 0.8
+      }
+    });
+  }
+
+  // Outline layer
+  if (!map.getLayer(outlineLayer)) {
+    map.addLayer({
+      id: outlineLayer,
+      type: "line",
+      source: sourceId,
+      paint: {
+        "line-width": 1,
+        "line-color": "#666"
+      }
+    });
+  }
+
+}
+
+function buildColorExpression(attr) {
+  return [
+    "interpolate",
+    ["linear"],
+    ["get", attr],
+    0, "#ffffff",
+    5, "#ff0000"
+  ];
+}
+
+function updateShortageAttribute(attr, map) {
+  activeAttr = attr;
+
+  if (map.getLayer(fillLayer)) {
+    map.setPaintProperty(
+      fillLayer,
+      "fill-color",
+      buildColorExpression(attr)
+    );
+  }
+}
+
+const popup = new mapboxgl.Popup({
+  closeButton: false,
+  closeOnClick: false
+});
+
+//update mgmt
+const updateAll = async () => {
+  const selectedRegion = document.getElementById("select-region").value;
+  const selectedT = document.getElementById("select-t").value;
+  if(!settings || !selectedRegion || !selectedT) {
+    return
+  }
+  await updateLineCharts(settings.state.left.runID, settings.state.right.runID, selectedRegion, selectedT);
+  updateShortageAttribute(`${selectedT}_${settings.state.left.runID}`, mapLeft);
+  updateShortageAttribute(`${selectedT}_${settings.state.right.runID}`, mapRight);
+};
 
 
 loadComponent({
   htmlPath: './components/fresh-water-shortage/body.html',
 
-  onLoaded: (wrapper) => {
+  onLoaded: async (wrapper) => {
 
-    function mean(arr) {
-      if (arr.length === 0) return 0; // avoid division by 0
-      const sum = arr.reduce((acc, val) => acc + val, 0);
-      return sum / arr.length;
-    }
+    lineChartLeft  = new Chart(document.getElementById('left-line' ).getContext('2d'), structuredClone(chartConfig))
+    lineChartRight = new Chart(document.getElementById('right-line').getContext('2d'), structuredClone(chartConfig))
 
-    async function init() {
-      const res = await fetch('./data/scenario-1.json');
-      const data = await res.json();
+    document.getElementById("select-region").onchange = updateAll;
+    document.getElementById("select-t").onchange = updateAll;
 
-      const time = data.time;
-      const regions = Object.keys(data.region);
-
-      // Populate time selects
-      //const startSel = document.getElementById('period_start');
-      //const endSel = document.getElementById('period_end');
-      const periodSel = document.getElementById('period');
-      time.forEach((t, i) => {
-        //startSel.add(new Option(t, i));
-        //endSel.add(new Option(t, i));
-        if (t.indexOf('-01-01')>0) {
-          periodSel.add(new Option(t.substring(0,4), i));
-        }
-      });
-      //startSel.value = time.length - 36*2;
-      //endSel.value = time.length - 1;
-      periodSel.value = time.length-36
-
-      // Populate region select
-      const regionSel = document.getElementById('region_select');
-      regions.forEach(r => regionSel.add(new Option(r, r)));
-      regionSel.value = regions[0];
-
-      const datasetsCfg = {
-        pointRadius: 0,         // hide dots/points
-        tension: 0.1            // smooth the line (0 = straight, 1 = very curvy)
-      }
-      const ctx = document.getElementById('myChart').getContext('2d');
-      const chart = new Chart(ctx, {
-        type: 'line',
-        data: { 
-          labels: [], 
-          datasets: []
-        },
-        options: { 
-          responsive: true,
-          scales: {
-            y: {
-              title: {
-                display: true,
-                text: 'm³/s'
-              }
-            }
-          }
-        }
+    fetch('./data/regions.json')
+      .then(r => r.json())
+      .then(data => {
+        const regions = data;
+        const select = document.getElementById("select-region");
+        const entries = Object.entries(regions);
+        entries.forEach(([key, value], index) => {
+          const isDefault = index === 0;
+          select.add(new Option(value, key, isDefault, isDefault));
+        });
+        updateAll()
       })
-      //sankey
-      const sankeyCfg = {
-        nodeConfig: {
-          Beschikbaar: {style:{fill:"lightblue"}},
-          Vraag: {style:{fill:"lightblue"}},
-          Tekort: {style:{fill:"red"}},
-          Beregening: {style:{fill:"green"}},
-          Peilbeheer: {style:{fill:"black"}},
-          Doorspoeling: {style:{fill:"blue"}},
-        },
-        flowBaseConfig: {
-          tooltip: (flow) => `${flow.from} &rarr; ${flow.to}: ${Math.round(flow.value*100)/100} m³/s`
-        },
-        nodeBaseConfig: {
-          label: {text: (node) => `${node.id} (${Math.round(node.size*100)/100} m³/s)`},
-          tooltip: null,
-        },
-        margin: [10,10,10,10],
-      }
+
+    mapboxgl.accessToken = 'pk.eyJ1IjoibXVsZGVybmllbHMiLCJhIjoiY21hd2lsbzd3MGRsaTJrczUzZDZqcHk2YSJ9.u_ZMSDYkqT91VxKqYtbdQQ';
+    
+    mapLeft = new mapboxgl.Map({container: 'left-map-shortage', ...mapConfig});
+    mapRight = new mapboxgl.Map({container: 'right-map-shortage', ...mapConfig});
+    
+    await loadShortageData();
+
+    [mapLeft, mapRight].forEach(map => {
+      map.on("idle", () => initShortageLayer(map));
+      
+      map.on("mousemove", "shortage-fill", (e) => {
+        map.getCanvas().style.cursor = "pointer";
+        const feature = e.features[0];
+        const value = feature.properties[activeAttr]; // currently selected attribute
+        popup
+          .setLngLat(e.lngLat)
+          .setHTML(`Tekort ${value !== undefined ? Math.round(value*10)/10 : "N/A"} m3/s`)
+          .addTo(map);
+      });
+
+      map.on("mouseleave", "shortage-fill", () => {
+        map.getCanvas().style.cursor = "";
+        popup.remove();
+      });
+
+    })
 
 
-      function updateChart() {
-        //data processing
-        //const startIdx = parseInt(startSel.value);
-        //const endIdx = parseInt(endSel.value);
-        const startIdx = parseInt(periodSel.value);
-        const endIdx = startIdx+36-1;
-        const region = regionSel.value;
+  },
 
-        const labels = time.slice(startIdx, endIdx + 1);
-        const rData = data.region[region];
-
-        const doorspoeling_vraag = rData.doorspoeling.vraag.slice(startIdx, endIdx + 1);
-        const beregening_vraag = rData.beregening.vraag.slice(startIdx, endIdx + 1);
-        const peilbeheer_vraag = rData.peilbeheer.vraag.slice(startIdx, endIdx + 1);
-
-        const tekort = rData.doorspoeling.vraag.map((_, i) => {
-          const totalVraag =
-            rData.doorspoeling.vraag[i] +
-            rData.beregening.vraag[i] +
-            rData.peilbeheer.vraag[i];
-          const totalLevering =
-            rData.doorspoeling.levering[i] +
-            rData.beregening.levering[i] +
-            rData.peilbeheer.levering[i];
-          return Math.max(totalVraag - totalLevering, 0);
-        }).slice(startIdx, endIdx + 1);
-
-        const dryestPeriod = tekort.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0);
-        const dryestMonthStart = Math.floor((dryestPeriod) / 3) * 3;
-        
-        console.log(dryestPeriod, dryestMonthStart)
-
-        //line
-        chart.data.labels = labels;
-        chart.data.datasets = [
-          { label: 'Doorspoeling Vraag', data: doorspoeling_vraag, borderColor: 'blue', ...datasetsCfg },
-          { label: 'Beregening Vraag', data: beregening_vraag, borderColor: 'green', ...datasetsCfg },
-          { label: 'Peilbeheer Vraag', data: peilbeheer_vraag, borderColor: 'black', ...datasetsCfg },
-          { label: 'Tekort', data: tekort, borderColor: 'red', ...datasetsCfg }
-        ];
-        chart.update();
-
-        document.getElementById('sankeyDesc').innerHTML = 
-        `In ${time[periodSel.value].substring(0,4)} was ${dryestMonthStart/3+1} de maand met het grootste tekort. Onderstaande Sankey laat de balans zien voor die maand.`
-
-
-        //sankey
-        const beschikbaar = doorspoeling_vraag.map((_, i) => doorspoeling_vraag[i] + beregening_vraag[i] + peilbeheer_vraag[i] - tekort[i]);
-
-        const flows = [
-          { from: "Beschikbaar", to: "Vraag", value: mean(beschikbaar.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"lightblue"}},
-          { from: "Tekort", to: "Vraag", value: mean(tekort.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"red"}},
-          { from: "Vraag", to: "Beregening", value: mean(beregening_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
-          { from: "Vraag", to: "Peilbeheer", value: mean(peilbeheer_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
-          { from: "Vraag", to: "Doorspoeling", value: mean(doorspoeling_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
-        ]
-
-        new Sankey('sankey-area', {flows, ...sankeyCfg})
-      }
-
-      //startSel.addEventListener('change', updateChart);
-      //endSel.addEventListener('change', updateChart);
-      periodSel.addEventListener('change', updateChart);
-      regionSel.addEventListener('change', updateChart);
-
-      updateChart();
-    }
-
-    init();
-
+  onSettings: async (settings1, wrapper) => {
+    settings = settings1
+    await updateAll()
   }
 });
+
+
