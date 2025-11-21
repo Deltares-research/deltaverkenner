@@ -1,0 +1,44 @@
+{
+  "flows": [
+    {
+      "from": "Beschikbaar",
+      "to": "Vraag",
+      "value": 11.126839907112945,
+      "style": {
+        "fill": "lightblue"
+      }
+    },
+    {
+      "from": "Tekort",
+      "to": "Vraag",
+      "value": 17.795808361854416,
+      "style": {
+        "fill": "red"
+      }
+    },
+    {
+      "from": "Vraag",
+      "to": "Beregening",
+      "value": 10.554101751033334,
+      "style": {
+        "fill": "green"
+      }
+    },
+    {
+      "from": "Vraag",
+      "to": "Peilbeheer",
+      "value": 17.368546517934025,
+      "style": {
+        "fill": "blue"
+      }
+    },
+    {
+      "from": "Vraag",
+      "to": "Doorspoeling",
+      "value": 1.0,
+      "style": {
+        "fill": "black"
+      }
+    }
+  ]
+}

@@ -1,12 +1,22 @@
-<div class="card mb-4">
+<div class="card text-bg-primary mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <span>Scenario en maatregel keuze</span>
+    <img style="height: 3em;" src="./assets/global-warming.svg" style="  fill: currentColor;">
+    <h3>Scenario's</h3>
     <i class="fas fa-info-circle" style="cursor:pointer" onclick="showModal('./components/settings/modal.html')"></i>
   </div>
   <div class="card-body">
+    <p>In de deltaverkenner vergelijk je altijd 2 scenarios met elkaar. Selecteer daarom een scenario links en rechts hieronder.</p>
     <div class="row">
-      <div class="col-md-6" id="left-settings"></div>
-      <div class="col-md-6" id="right-settings"></div>
+      <div class="col-md-6">
+        <div id="left-settings"></div>
+      </div>
+      <div class="col-md-6">
+        <div id="right-settings"></div>
+      </div>
     </div>
   </div>
 </div>
+
+<!--
+Global Warming by Mutualism from <a href="https://thenounproject.com/browse/icons/term/global-warming/" target="_blank" title="Global Warming Icons">Noun Project</a> (CC BY 3.0)
+-->

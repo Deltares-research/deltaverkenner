@@ -3,7 +3,7 @@ import {Sankey} from "https://muldernielsdeltares.github.io/SankeyRiver/sankey.m
 
 
 loadComponent({
-  htmlPath: './components/fresh-water-shortage/body.html',
+  htmlPath: './components/fresh-water-shortage_/body.html',
 
   onLoaded: (wrapper) => {
 
@@ -142,6 +142,8 @@ loadComponent({
           { from: "Vraag", to: "Peilbeheer", value: mean(peilbeheer_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
           { from: "Vraag", to: "Doorspoeling", value: mean(doorspoeling_vraag.slice(dryestMonthStart,dryestMonthStart+3)), style:{fill:"blue"}},
         ]
+
+        console.log({flows, ...sankeyCfg})
 
         new Sankey('sankey-area', {flows, ...sankeyCfg})
       }

@@ -23,6 +23,15 @@
       align-items: center;
       border-radius: 0.5rem;
     }
+
+    body, html {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+* {
+  overflow: visible !important;
+}
   </style>
 
 <script type="module">
@@ -35,7 +44,7 @@
     //await import('./components/test/script.js');
     await import('./components/fresh-water-shortage/script.js');
     await import('./components/water-safety/script.js');
-    //await import('./components/footer/script.js');
+    await import('./components/footer/script.js');
     //trigger onSettings() for each component
     settingsStore.update()
   })();
@@ -55,7 +64,7 @@
   <div class="container-fluid py-3">
     <h1 class="mb-5">Deltaverkenner</h1>
 
-    <div id="settings-container"></div>
+    <div class="sticky-top" id="settings-container"></div>
 
     <div id="components-container"></div>
 

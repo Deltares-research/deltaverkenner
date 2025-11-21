@@ -1,7 +1,27 @@
 import { loadComponent } from '../../shared/componentLoader.js';
+import {Sankey} from "https://muldernielsdeltares.github.io/SankeyRiver/sankey.min.js"
 
 let regions
 let settings
+
+  const sankeyCfg = {
+    nodeConfig: {
+      Beschikbaar: {style:{fill:"lightblue"}},
+      Vraag: {style:{fill:"lightblue"}},
+      Tekort: {style:{fill:"red"}},
+      Beregening: {style:{fill:"green"}},
+      Peilbeheer: {style:{fill:"blue"}},
+      Doorspoeling: {style:{fill:"black"}},
+    },
+    flowBaseConfig: {
+      tooltip: (flow) => `${flow.from} &rarr; ${flow.to}: ${Math.round(flow.value*100)/100} m³/s`
+    },
+    nodeBaseConfig: {
+      label: {text: (node) => `${node.id} (${Math.round(node.size*100)/100} m³/s)`},
+      tooltip: null,
+    },
+    margin: [10,10,10,10],
+  }
 
 const chartConfig = {
   type: 'line',
@@ -78,7 +98,7 @@ async function updateLineCharts(leftRunID, rightRunID, selectedRegion, selectedT
 
 //map stuff
 let shortageData = null;     // stored geojson
-let activeAttr = "2_10";     // default attribute
+let activeAttr = {}
 const sourceId = "shortage"; // shared source name
 const fillLayer = "shortage-fill";
 const outlineLayer = "shortage-outline";
@@ -89,7 +109,8 @@ async function loadShortageData() {
   shortageData = await resp.json();
 }
 
-function initShortageLayer(map) {
+function initShortageLayer(map, side) {
+  console.log('initShortageLayer')
   // Add source once per map
   if (!map.getSource(sourceId)) {
     map.addSource(sourceId, {
@@ -105,7 +126,7 @@ function initShortageLayer(map) {
       type: "fill",
       source: sourceId,
       paint: {
-        "fill-color": buildColorExpression(activeAttr),
+        "fill-color": buildColorExpression(activeAttr[side]),
         "fill-opacity": 0.8
       }
     });
@@ -127,6 +148,7 @@ function initShortageLayer(map) {
 }
 
 function buildColorExpression(attr) {
+  console.log(attr)
   return [
     "interpolate",
     ["linear"],
@@ -137,8 +159,7 @@ function buildColorExpression(attr) {
 }
 
 function updateShortageAttribute(attr, map) {
-  activeAttr = attr;
-
+  console.log('updateShortageAttribute',attr)
   if (map.getLayer(fillLayer)) {
     map.setPaintProperty(
       fillLayer,
@@ -155,14 +176,34 @@ const popup = new mapboxgl.Popup({
 
 //update mgmt
 const updateAll = async () => {
+  console.log('updateAll')
   const selectedRegion = document.getElementById("select-region").value;
   const selectedT = document.getElementById("select-t").value;
   if(!settings || !selectedRegion || !selectedT) {
     return
   }
-  await updateLineCharts(settings.state.left.runID, settings.state.right.runID, selectedRegion, selectedT);
-  updateShortageAttribute(`${selectedT}_${settings.state.left.runID}`, mapLeft);
-  updateShortageAttribute(`${selectedT}_${settings.state.right.runID}`, mapRight);
+
+  //line chart
+  //await updateLineCharts(settings.state.left.runID, settings.state.right.runID, selectedRegion, selectedT);
+  
+  //map
+  activeAttr['left'] = `${selectedT}_${settings.state.left.runID}`
+  activeAttr['right'] = `${selectedT}_${settings.state.right.runID}`
+  updateShortageAttribute(activeAttr['left'], mapLeft);
+  updateShortageAttribute(activeAttr['right'], mapRight);
+
+  //sankey
+  fetch(`./data/graphs/fresh-water-shortage-sankey/${settings.state.left.runID}-T${selectedT}-${selectedRegion}.json`)
+  .then(r => r.json())
+  .then(data => {
+    new Sankey('left-sankey', {flows:data.flows, ...sankeyCfg})
+  })
+  fetch(`./data/graphs/fresh-water-shortage-sankey/${settings.state.right.runID}-T${selectedT}-${selectedRegion}.json`)
+  .then(r => r.json())
+  .then(data => {
+    new Sankey('right-sankey', {flows:data.flows, ...sankeyCfg})
+  })
+
 };
 
 
@@ -171,8 +212,8 @@ loadComponent({
 
   onLoaded: async (wrapper) => {
 
-    lineChartLeft  = new Chart(document.getElementById('left-line' ).getContext('2d'), structuredClone(chartConfig))
-    lineChartRight = new Chart(document.getElementById('right-line').getContext('2d'), structuredClone(chartConfig))
+    //lineChartLeft  = new Chart(document.getElementById('left-line' ).getContext('2d'), structuredClone(chartConfig))
+    //lineChartRight = new Chart(document.getElementById('right-line').getContext('2d'), structuredClone(chartConfig))
 
     document.getElementById("select-region").onchange = updateAll;
     document.getElementById("select-t").onchange = updateAll;
@@ -184,7 +225,7 @@ loadComponent({
         const select = document.getElementById("select-region");
         const entries = Object.entries(regions);
         entries.forEach(([key, value], index) => {
-          const isDefault = index === 0;
+          const isDefault = key === 'r5';
           select.add(new Option(value, key, isDefault, isDefault));
         });
         updateAll()
@@ -197,16 +238,19 @@ loadComponent({
     
     await loadShortageData();
 
-    [mapLeft, mapRight].forEach(map => {
-      map.on("idle", () => initShortageLayer(map));
+    [
+      { map: mapLeft, side: "left" },
+      { map: mapRight, side: "right" }
+    ].forEach(({ map, side }) => {
+      map.on("idle", () => initShortageLayer(map, side));
       
       map.on("mousemove", "shortage-fill", (e) => {
         map.getCanvas().style.cursor = "pointer";
         const feature = e.features[0];
-        const value = feature.properties[activeAttr]; // currently selected attribute
+        const value = feature.properties[activeAttr[side]];
         popup
           .setLngLat(e.lngLat)
-          .setHTML(`Tekort ${value !== undefined ? Math.round(value*10)/10 : "N/A"} m3/s`)
+          .setHTML(`Tekort voor ${feature.properties.Naam} is ${value !== undefined ? Math.round(value*10)/10 : "N/A"} m3/s`)
           .addTo(map);
       });
 

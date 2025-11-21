@@ -5,21 +5,24 @@
       "label": "Klimaatscenario",
       "type": "select",
       "default": "laag",
-      "options": ["referentie", "laag", "gematigd", "extreem", "zeer extreem"]
+      "options": ["referentie", "laag", "gematigd", "extreem", "zeer extreem"],
+      "hide": false
     },
     {
       "id": "zichtjaar",
       "label": "Zichtjaar",
       "type": "select",
       "default": "2023",
-      "options": ["2023", "2050", "2100", "2150", "2200"]
+      "options": ["2023", "2050", "2100", "2150", "2200"],
+      "hide": false
     },
     {
       "id": "afvoerverdeling",
       "label": "Afvoerverdeling",
       "type": "select",
       "default": "2018",
-      "options": ["2018", "1980", "2050"]
+      "options": ["2018", "1980", "2050"],
+      "hide": false
     },
     {
       "id": "afvoerbeperking",
@@ -29,7 +32,8 @@
       "options": [
         { "label": "ja", "value": true },
         { "label": "nee", "value": false }
-      ]
+      ],
+      "hide": true
     },
     {
       "id": "kwa",
@@ -39,14 +43,16 @@
       "options": [
         { "label": "ja", "value": true },
         { "label": "nee", "value": false }
-      ]
+      ],
+      "hide": true
     }
   ],
   "defaults": {
     "left": {
     },
     "right": {
-      "zichtjaar": 2200
+      "zichtjaar": 2200,
+      "klimaat": "zeer extreem"
     }
   },
   "settings": {

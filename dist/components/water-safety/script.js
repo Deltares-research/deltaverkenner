@@ -49,9 +49,9 @@ loadComponent({
     let combinations = {};
     
     // Populate tijdlijn select
-    const tijdlijnSelect = document.getElementById('tijdlijn');
+    const tijdlijnSelect = document.getElementById('left-klimaat')//document.getElementById('tijdlijn');
     const variantSelect = document.getElementById('variant');
-    const zichtjaarSelect = document.getElementById('zichtjaar');
+    const zichtjaarSelect = document.getElementById('left-zichtjaar')//document.getElementById('zichtjaar');
     const diepteSelect = document.getElementById('diepte');
 
     Promise.all([
@@ -60,9 +60,11 @@ loadComponent({
       combinations = data;
 
       // Populate tijdlijn
+      /*
       Object.keys(combinations).forEach(t =>
         tijdlijnSelect.add(new Option(t, t))
       );
+      */
 
       // Populate variant (all unique)
       const variants = [...new Set(
@@ -74,7 +76,7 @@ loadComponent({
       zichtjaren = [...new Set(
         Object.values(combinations).flatMap(v => Object.values(v)).flatMap(z => Object.keys(z))
       )];
-      zichtjaren.forEach(z => zichtjaarSelect.add(new Option(z, z)));
+      //zichtjaren.forEach(z => zichtjaarSelect.add(new Option(z, z)));
 
       // Populate diepte
       dieptes.forEach(d => diepteSelect.add(new Option(d + ' cm', d)));
@@ -84,9 +86,9 @@ loadComponent({
       zichtjaarSelect.value = '2100'
 
       // Attach listeners
-      tijdlijnSelect.addEventListener('change', updateMap);
+      //tijdlijnSelect.addEventListener('change', updateMap);
       variantSelect.addEventListener('change', updateMap);
-      zichtjaarSelect.addEventListener('change', updateMap);
+      //zichtjaarSelect.addEventListener('change', updateMap);
       diepteSelect.addEventListener('change', updateMap);
 
       floodedChart.data.labels = zichtjaren
@@ -140,6 +142,7 @@ loadComponent({
           const combi = combinations[tijdlijn_][variant][zj];
           const attr = `${diepte} cm_${combi}`;
           const value = props[attr]
+          console.log(tijdlijn_, combi, attr, value)
           return value === 0 ? 1 : props[attr]; //todo niet meer nodig in nw shape
         });
 

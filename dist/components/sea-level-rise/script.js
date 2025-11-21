@@ -2,10 +2,12 @@ import { loadComponent } from '../../shared/componentLoader.js';
 
 let runs = []
 
-const showZss = (zss, side) => {
+const showZss = (zss, side, settings) => {
   document.getElementById(`zss-${side}`).style.display = zss!==null ? 'block' : 'none'
   if(zss!==null) {
     document.getElementById(`zss-${side}-value`).innerHTML = zss
+    document.getElementById(`zss-${side}-climate`).innerHTML = settings.state[side].klimaat
+    document.getElementById(`zss-${side}-year`).innerHTML = settings.state[side].zichtjaar
   }
 }
 
@@ -27,7 +29,7 @@ loadComponent({
         row.runID === cnf.runID
       );
       const zss =  match ? match.zss : null;
-      showZss(zss, side)
+      showZss(zss, side, settings)
     }
 
   }

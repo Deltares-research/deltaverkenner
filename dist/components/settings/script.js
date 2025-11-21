@@ -4,7 +4,7 @@ let runs = []
 
 function createSelects(container, side, config) {
   container.innerHTML = ""; // clean container
-  const menu = config.menu
+  const menu = config.menu.filter(i=>!i.hide)
   const defaults = config.defaults?.[side] || {};
 
   // Build each select from config.menu
@@ -57,8 +57,8 @@ function createSelects(container, side, config) {
       row.klimaat === newState.klimaat &&
       Number(row.zichtjaar) === Number(newState.zichtjaar) &&
       Number(row.afvoerverdeling) === Number(newState.afvoerverdeling) &&
-      String(row.afvoerbeperking) === String(newState.afvoerbeperking) &&
-      String(row.kwa) === String(newState.kwa)
+      String(row.afvoerbeperking) === 'false' &&//String(newState.afvoerbeperking) &&
+      String(row.kwa) === 'false'//String(newState.kwa)
     );
     newState['runID'] = match ? match.runID : null
 
